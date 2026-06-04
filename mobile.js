@@ -222,19 +222,55 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── CONTACT FORM ────────────────────────────────────────
     const form = document.getElementById('contact-form');
     if (form) {
-        form.addEventListener('submit', e => {
+        form.addEventListener('submit', async e => {
             e.preventDefault();
-            const msg = form.querySelector('.form-msg');
+            const msg    = form.querySelector('.form-msg');
             const submit = form.querySelector('.form-submit');
-            submit.disabled = true;
-            submit.textContent = 'Sending…';
-            setTimeout(() => {
-                if (msg) { msg.textContent = '✅ Thank you! We will contact you soon.'; msg.className = 'form-msg success'; }
-                form.reset();
-                submit.disabled = false;
+
+            // Phone validation: must be exactly 10 digits
+            const phoneInput = form.querySelector('#fphone');
+            const phoneVal   = phoneInput ? phoneInput.value.trim() : '';
+            if (!/^\d{10}$/.test(phoneVal)) {
+                if (msg) {
+                    msg.textContent = '⚠️ Please enter a valid 10-digit mobile number.';
+                    msg.className   = 'form-msg error';
+                }
+                phoneInput?.focus();
+                return;
+            }
+
+            // Disable button and show loading state
+            submit.disabled     = true;
+            submit.innerHTML    = '<i class="fa-solid fa-spinner fa-spin"></i> Sending…';
+
+            try {
+                const data = new FormData(form);
+                const response = await fetch('https://api.web3forms.com/submit', {
+                    method: 'POST',
+                    body: data
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    if (msg) {
+                        msg.textContent = '✅ Thank you! We will get back to you shortly.';
+                        msg.className   = 'form-msg success';
+                    }
+                    form.reset();
+                    showToast('✅ Message sent successfully!');
+                } else {
+                    throw new Error(result.message || 'Submission failed');
+                }
+            } catch (err) {
+                if (msg) {
+                    msg.textContent = '❌ Something went wrong. Please try again or call us directly.';
+                    msg.className   = 'form-msg error';
+                }
+                showToast('❌ Failed to send message. Please retry.');
+            } finally {
+                submit.disabled  = false;
                 submit.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Message';
-                showToast('✅ Message sent successfully!');
-            }, 1200);
+            }
         });
     }
 
