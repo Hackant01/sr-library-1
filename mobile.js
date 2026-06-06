@@ -288,4 +288,68 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.showToast = showToast;
 
+    // ── ANNOUNCE BAR — push navbar down ─────────────────────
+    const announceBar = document.getElementById('announceBar');
+    if (announceBar) {
+        document.body.classList.add('has-announce');
+        announceBar.querySelector('.announce-close')?.addEventListener('click', () => {
+            document.body.classList.remove('has-announce');
+        });
+    }
+
+    // ── FLOATING MINI TIMER ──────────────────────────────────
+    const floatToggle = document.getElementById('floatTimerToggle');
+    const floatPanel  = document.getElementById('floatTimerPanel');
+    const floatClose  = document.getElementById('floatTimerClose');
+    const ftpDisplay  = document.getElementById('ftp-display');
+    const ftpBar      = document.getElementById('ftp-bar');
+    const ftpStart    = document.getElementById('ftp-start');
+    const ftpPause    = document.getElementById('ftp-pause');
+    const ftpReset    = document.getElementById('ftp-reset');
+    const ftpModes    = document.querySelectorAll('.ftp-mode');
+
+    if (floatToggle && floatPanel && ftpDisplay) {
+        let ftpTotal = 25 * 60, ftpLeft = 25 * 60, ftpInterval = null, ftpRunning = false;
+
+        function ftpFmt(s) {
+            return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+        }
+        function ftpUpdateUI() {
+            ftpDisplay.textContent = ftpFmt(ftpLeft);
+            if (ftpBar) ftpBar.style.width = (ftpLeft / ftpTotal * 100) + '%';
+        }
+        function ftpStop() {
+            clearInterval(ftpInterval); ftpInterval = null; ftpRunning = false;
+        }
+        function ftpGo() {
+            if (ftpRunning) return;
+            ftpRunning = true;
+            ftpInterval = setInterval(() => {
+                if (ftpLeft <= 0) { ftpStop(); showToast('⏰ Focus session done! Take a break.'); return; }
+                ftpLeft--;
+                ftpUpdateUI();
+            }, 1000);
+        }
+
+        floatToggle.addEventListener('click', () => {
+            floatPanel.classList.toggle('open');
+        });
+        floatClose?.addEventListener('click', () => floatPanel.classList.remove('open'));
+        ftpStart?.addEventListener('click', ftpGo);
+        ftpPause?.addEventListener('click', ftpStop);
+        ftpReset?.addEventListener('click', () => { ftpStop(); ftpLeft = ftpTotal; ftpUpdateUI(); });
+
+        ftpModes.forEach(btn => {
+            btn.addEventListener('click', () => {
+                ftpModes.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const [m, s] = btn.dataset.ftp.split(':').map(Number);
+                ftpTotal = m * 60 + s;
+                ftpLeft = ftpTotal;
+                ftpStop(); ftpUpdateUI();
+            });
+        });
+        ftpUpdateUI();
+    }
+
 });
